@@ -1,0 +1,55 @@
+#! /usr/bin/python3
+
+
+import requests
+import os
+import sys
+
+proxies = {}
+if len(sys.argv) == 2:
+    proxies = {
+                'http' : sys.argv[1],
+                'https' : sys.argv[1]
+              }
+
+na = 'https://raw.githubusercontent.com/benmoose39/YouTube_to_m3u/main/assets/moose_na.m3u'
+def grab(line):
+    try:
+        _id = line.split('/')[4]
+        response = s.get(f'https://www.dailymotion.com/player/metadata/video/{_id}', proxies=proxies).json()['qualities']['auto'][0]['url']
+        m3u8 = s.get(response, proxies=proxies).text
+        m3u8 = m3u8.strip().split('\n')[1:]
+        d = {}
+        cnd = True
+        for item in m3u8:
+            if cnd:
+                resolution = item.strip().split(',')[2].split('=')[1]
+                if resolution not in d:
+                    d[resolution] = []
+            else:
+                d[resolution]= item
+            cnd = not cnd
+        #print(m3u8)
+        m3u8 = d[max(d, key=int)]    
+    except Exception as e:
+        m3u8 = na
+    finally:
+        print(m3u8)
+
+print('#EXTM3U')
+print(banner)
+s = requests.Session()
+with open('../Antv_info.txt') as f:
+    for line in f:
+        line = line.strip()
+        if not line or line.startswith('~~'):
+            continue
+        if not line.startswith('https:'):
+            line = line.split('|')
+            ch_name = line[0].strip()
+            grp_title = line[1].strip().title()
+            tvg_logo = line[2].strip()
+            tvg_id = line[3].strip()
+            print(f'\n#EXTINF:-1 group-title="{grp_title}" tvg-logo="{tvg_logo}" tvg-id="{tvg_id}", {ch_name}')
+        else:
+            grab(line)
